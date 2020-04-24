@@ -90,6 +90,7 @@ function wcpp_custom_style()
                 function wc_slm_data_panel()
                 {
                     global $post;
+                    $slm_options = get_option('slm_plugin_options');
                     ?>
     <div id='wc_slm_meta' class='panel woocommerce_options_panel'>
         <?php ?>
@@ -115,6 +116,17 @@ function wcpp_custom_style()
                         'description'   => __('Enter the allowed amount of devices this license can have (computers, mobile, etc).', 'softwarelicensemanager')
                     )
                 );
+                if ($slm_options['slm_multiple_items']==1){
+                    woocommerce_wp_text_input(
+                        array(
+                            'id'            => '_license_item_reference',
+                            'label'         => __('Item reference', 'softwarelicensemanager'),
+                            'placeholder'   => "Software's item referece",
+                            'desc_tip'      => 'true',
+                            'description' => __('Enter the item reference of your application, theme, or plug-in. The licence will be then bound to this exact software.', 'softwarelicensemanager')
+                        )
+                    );
+                }
                 woocommerce_wp_select(
                     array(
                         'id'            => '_license_type',
@@ -196,6 +208,9 @@ function wcpp_custom_style()
 
                 $is_wc_slm_data_tab_enabled = isset($_POST['_wc_slm_data_tab_enabled']) ? 'yes' : 'no';
                 update_post_meta($post_id, '_wc_slm_data_tab_enabled', $is_wc_slm_data_tab_enabled);
+                
+                $_license_item_reference = $_POST['_license_item_reference'];
+                update_post_meta($post_id, '_license_item_reference', esc_attr($_license_item_reference));
 
                 $_license_type = $_POST['_license_type'];
                 if (!empty($_license_type)) {

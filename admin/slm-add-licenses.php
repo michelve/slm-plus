@@ -26,6 +26,7 @@ function slm_add_licenses_menu()
     $product_ref    = '';
     $subscr_id      = '';
     $lic_type       = '';
+    $lic_item_ref   = '';
     $reg_domains    = '';
     $reg_devices    = '';
     $class_hide     = '';
@@ -63,6 +64,7 @@ function slm_add_licenses_menu()
         $current_ver    = $record->current_ver;
         $subscr_id      = $record->subscr_id;
         $lic_type       = $record->lic_type;
+        $lic_item_ref   = $record->item_reference;
         $expiry_date    = $record->date_expiry;
     }
     if (isset($_POST['save_record'])) {
@@ -97,6 +99,7 @@ function slm_add_licenses_menu()
         $current_ver    = $_POST['current_ver'];
         $subscr_id      = $_POST['subscr_id'];
         $lic_type       = $_POST['lic_type'];
+        $lic_item_ref   = trim($_POST['item_reference']);
 
 
         if ($_POST['lic_type'] == 'lifetime'){
@@ -138,6 +141,7 @@ function slm_add_licenses_menu()
         $fields['current_ver']  = $current_ver;
         $fields['subscr_id']    = $subscr_id;
         $fields['lic_type']     = $lic_type;
+        $fields['item_reference'] = $lic_item_ref;
 
 
         $id                     = isset($_POST['edit_record']) ? $_POST['edit_record'] : '';
@@ -330,7 +334,7 @@ function slm_add_licenses_menu()
                                                                 </div>
 
                                                                 <div class="form-group col-md-6">
-                                                                    <label for="email">License type</label>
+                                                                    <label for="lic_type">License type</label>
                                                                     <select name="lic_type" class="form-control">
                                                                         <option value="subscription" <?php if ($lic_type == 'subscription') {
                                                                                                             echo 'selected="selected"';
@@ -343,6 +347,30 @@ function slm_add_licenses_menu()
                                                                     <small class="form-text text-muted"><?php _e('type of license: subscription base or lifetime');?></small>
                                                                 </div>
                                                             </div>
+                                                            <?php
+                                                            if ($slm_options['slm_multiple_items']==1) :
+                                                                global $wpdb;
+                                                                $post_meta_tbl = $wpdb->prefix . 'postmeta';
+                                                                $item_ref_meta = '_license_item_reference';
+                                                                $sql_prep = $wpdb->prepare("SELECT DISTINCT(meta_value) FROM $post_meta_tbl WHERE meta_key = %s", $item_ref_meta);
+                                                                $values_item_refs = $wpdb->get_results($sql_prep, OBJECT);
+                                                            ?>
+                                                            <div class="row">
+                                                                <div class="form-group col-md-12">
+                                                                <label for="item_reference">Item reference</label>
+                                                                    <select name="item_reference" class="form-control">
+                                                                    <?php
+                                                                        foreach ($values_item_refs as $item_reference) {
+                                                                            $sel_val = esc_attr(trim($item_reference->meta_value));
+                                                                            $is_selected = $lic_item_ref==$sel_val ? ' selected="selected"' : '';
+                                                                            echo '<option value="'. $sel_val .'"'.$is_selected.'>'.$sel_val .'</option>';
+                                                                        }
+                                                                    ?>
+                                                                    </select>
+                                                                    <small class="form-text text-muted"><?php _e('Item reference of your software');?></small>
+                                                                </div>
+                                                            </div>
+                                                            <?php endif; ?>
                                                             <div class="clear"></div>
                                                         </div>
                                                     </div>

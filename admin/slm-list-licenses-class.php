@@ -339,7 +339,7 @@ class SLM_List_Licenses extends WP_List_Table
         }
 
         $columns        = $this->get_columns();
-        $hidden         = array();
+        $hidden         = get_hidden_columns( $screen );
         $sortable       = $this->get_sortable_columns();
 
         $this->_column_headers = array($columns, $hidden, $sortable);

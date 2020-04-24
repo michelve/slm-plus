@@ -17,6 +17,9 @@ $lic_devices_table  = SLM_TBL_LIC_DEVICES;
 $lic_log_tbl        = SLM_TBL_LIC_LOG;
 $lic_emails_table   = SLM_TBL_EMAILS;
 
+//***Database version check */
+$used_db_version = get_option( 'slm_db_version', SLM_DB_VERSION);
+
 $charset_collate = '';
 if (!empty($wpdb->charset)){
     $charset_collate = "DEFAULT CHARACTER SET $wpdb->charset";
@@ -35,6 +38,7 @@ $lk_tbl_sql = "CREATE TABLE " . $lic_key_table . " (
       max_allowed_devices int(40) NOT NULL,
       lic_status ENUM('pending', 'active', 'blocked', 'expired') NOT NULL DEFAULT 'pending',
       lic_type ENUM('none', 'subscription', 'lifetime') NOT NULL DEFAULT 'subscription',
+      item_reference varchar(255) NOT NULL,
       first_name varchar(32) NOT NULL default '',
       last_name varchar(32) NOT NULL default '',
       email varchar(64) NOT NULL,
@@ -56,7 +60,10 @@ $lk_tbl_sql = "CREATE TABLE " . $lic_key_table . " (
       )" . $charset_collate . ";";
 dbDelta($lk_tbl_sql);
 
-
+if (version_compare($used_db_version, '4.1.3', '<=')) {
+      $lk_tbl_sql = "ALTER TABLE " . $lic_key_table . " ADD item_reference varchar(255) NOT NULL;";
+      dbDelta($lk_tbl_sql);
+}
 
 $ld_tbl_sql = "CREATE TABLE " .$lic_domain_table. " (
       id INT NOT NULL AUTO_INCREMENT ,
@@ -117,9 +124,15 @@ $options = array(
     'slm_woo_downloads'       => '',
     'slm_stats'               => '1',
     'slm_adminbar'            => '1',
+    'slm_multiple_items'            => '',
     'enable_auto_key_expiration' => '1',
     'slm_dl_manager'          => '',
     'expiration_reminder_text' => 'Your account has reverted to Basic with limited functionality. Renew today to keep using it on all of your devices and enjoy the valuable features. It’s a smart investment');
 
+//Bugfix - Prevention of overwriting existing settings
+$old_options = get_option('slm_plugin_options');
+if($old_options != false){
+      $options = array_merge($options,$old_options);
+}
 update_option('slm_plugin_options', $options);
 update_option("slm_db_version", SLM_DB_VERSION);
