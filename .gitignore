@@ -1,4 +1,4 @@
-/nbproject/private/
+nbproject/private/
 sftp-config_.json
 sftp-config.json
 sftp-config-alt.json
@@ -7,3 +7,8 @@ package-lock.json
 /node_modules/
 /node_modules/*
 .vscode
+/.idea/
+/target/
+/vendor/
+/composer.lock
+dev.properties

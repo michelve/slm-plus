@@ -1,13 +1,14 @@
-=== Software license management ===
+=== @PLUGIN_NAME@ ===
+Version: @VERSION@
 Contributors: Michel Velis
 Donate link: http://paypal.me/mvelis
 Tags: license, software license
-Requires at least: 4.1
-Tested up to: 6.1.0
-Stable tag: 5.6.2
-Requires PHP: 5.2.4
-License: GPLv2 or later
+Requires at least: @WP_MIN_VERSION@
+Tested up to: @WP_VERSION_TESTED@
+Requires PHP: @PHP_MIN@
+License: MIT
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Stable tag: @BUILD@
 
 Software license management solution for your web applications. Supports WooCommerce.
 

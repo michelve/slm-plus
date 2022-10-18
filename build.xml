@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Software Licence Manager" basedir=".">
+
+    <!-- Include config file containing  -->
+    <loadproperties srcFile="build.properties" />
+    <!-- Sets variables which can later be used. -->
+    <!-- The value of a property is accessed via ${} -->
+    <property name="src.dir" location="src" />
+    <property name="build.dir" location="target/generated" />
+    <property name="dist.dir" location="target/dist" />
+    <property name="php.src" location="${src.dir}/main/php"/>
+    <property name="test.php.src" location="${src.dir}/test/php"/>
+
+    <property name="resources.src" location="${src.dir}/main/resources"/>
+
+    <fail unless="plugin.name"/>
+    <target name="build.clean">
+        <echo message="delete the build and dist directories ..." level="info"/>
+        <delete dir="${build.dir}" />
+        <delete dir="${dist.dir}" />
+    </target>
+   <!-- Creates the  build & moves the files directory-->
+    <target name="makedir" depends="build.clean">
+        <echo message="making build and dist directories ..." level="info"/>
+        <mkdir dir="${build.dir}" />
+        <mkdir dir="${build.dir}/${plugin.dir_name}" />
+        <mkdir dir="${dist.dir}" />
+    </target>
+
+    <target name="make" depends="makedir" description="makes the magic">
+        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="false">
+            <fileset dir="${php.src}"
+                     includes="**/*.php,**/*.png,**/*.css,**/*.js,**/*.mo,**/*.pot"
+            />
+        </copy>
+    </target>
+
+    <target name="text_replacement" depends="make">
+        <echo message="Generating readme file ..." level="info" description="makes readme txt"/>
+        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="true">
+            <fileset dir="${resources.src}"/>
+            <globmapper from="readme_template.txt" to="readme.txt"/>
+            <filterset>
+                <filter token="VERSION" value="${plugin.version}"/>
+                <filter token="PLUGIN_NAME" value="${plugin.name}"/>
+                <filter token="WP_MIN_VERSION" value="${plugin.wp_version_min}"/>
+                <filter token="WP_VERSION_TESTED" value="${plugin.wp_version_tested}"/>
+                <filter token="PHP_MIN" value="${plugin.php_min}"/>
+            </filterset>
+        </copy>
+    </target>
+    <target name="php_delete" depends="make">
+        <echo message="Deleting main php file ..." level="info" description="Deleting php"/>
+        <delete file="${build.dir}/${plugin.dir_name}/${plugin.dir_name}.php" failonerror="true"/>
+    </target>
+    <target name="php_text_replace" depends="php_delete">
+        <echo message="Generating main php file ..." level="info" description="makes php"/>
+        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="true" verbose="true">
+            <fileset dir="${php.src}" />
+            <globmapper from="software-license-manager.php" to="software-license-manager.php"/>
+            <filterset>
+                <filter token="VERSION" value="${plugin.version}"/>
+                <filter token="PLUGIN_NAME" value="${plugin.name}"/>
+                <filter token="WP_MIN_VERSION" value="${plugin.wp_version_min}"/>
+                <filter token="WP_VERSION_TESTED" value="${plugin.wp_version_tested}"/>
+                <filter token="PHP_MIN" value="${plugin.php_min}"/>
+            </filterset>
+        </copy>
+    </target>
+
+    <target name="dev.json">
+        <echo file="dev-${plugin.dir_name}.json" append="false">
+            {
+            "name" : "${plugin.name}",
+            "slug" : "${plugin.name}",
+            "homepage" : "https://your.domain.com/${plugin.name}/",
+            "download_url" : "https://your.domain.com/plugins/${plugin.name}/${plugin.name}.zip",
+            "version" : "${plugin.build}",
+            "requires" : "3.3",
+            "tested" : "3.5.1",
+            "last_updated" : "2013-02-24 16:00:00",
+            "upgrade_notice" : "${plugin.changelog.version}",
+            "author" : "your name",
+            "author_homepage" : "http://your.domain.com/",
+            "sections" : {
+            "description" : "${plugin.short}",
+            "installation_notes" : "Click install to download and automatically update to the new version..",
+            "changelog" : "This section list's what's changed. \n 1.7 - New Shortcode functions \n -Added pagination"
+            },
+            "downloaded" : 100
+            }
+        </echo>
+    </target>
+
+    <target name="zip" depends="makedir, make, text_replacement, php_text_replace">
+        <echo message="making the zip ..." level="info"/>
+        <zip destfile="${dist.dir}/${plugin.dir_name}.zip"
+             basedir="/${build.dir}"
+        />
+    </target>
+
+    <target name="default" depends="zip">
+        <echo message="Build Version ${plugin.version} Complete find the zip in ${dist.dir}/${plugin.dir_name}.zip" level="info"/>
+    </target>
+
+
+    <!-- *************************************************************** -->
+    <!--             ******** WP-CLI **********                       -->
+    <!-- *************************************************************** -->
+<!--
+    <target name="wp.status" description="WP-CLI check plugin state">
+        <echo message="Checking ${plugin.name} Status..." />
+
+        <exec executable="wp" dir=".">
+            <arg line="plugin status ${plugin.name}" />
+        </exec>
+    </target>
+
+    <target name="wp.install" description="WP-CLI install plugin">
+        <echo message="Installing ${plugin.name}..." />
+
+        <exec executable="wp" dir=".">
+            <arg line="plugin install ${dist.dir}/${plugin.name}.zip" />
+        </exec>
+    </target>
+
+    <target name="wp.activate" depends="wp.install" description="WP-CLI activate plugin">
+        <echo message="Activating ${plugin.name}..." />
+
+        <exec executable="wp" dir=".">
+            <arg line="plugin activate ${plugin.name}" />
+        </exec>
+    </target>
+
+    <target name="wp.deactivate" description="WP-CLI deactivate plugin">
+        <echo message="Deactivating ${plugin.name}..." />
+
+        <exec executable="wp" dir=".">
+            <arg line="plugin deactivate ${plugin.name}.zip" />
+        </exec>
+    </target>
+
+    <target name="wp.delete" description="WP-CLI deactivate plugin">
+        <echo message="Deleting ${plugin.name}..." />
+
+        <exec executable="wp" dir=".">
+            <arg line="plugin delete ${plugin.name}.zip" />
+        </exec>
+    </target>
+    -->
+</project>
+
