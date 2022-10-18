@@ -30,7 +30,7 @@
     <target name="make" depends="makedir" description="makes the magic">
         <copy todir="${build.dir}/${plugin.dir_name}" failonerror="false">
             <fileset dir="${php.src}"
-                     includes="**/*.php,**/*.png,**/*.css,**/*.js,**/*.mo,**/*.pot"
+                     includes="**/*.php,**/*.png,**/*.svg,**/*.css,**/*.js,**/*.mo,**/*.pot"
             />
         </copy>
     </target>
