@@ -46,6 +46,6 @@
   "devDependencies": {
     "auto-changelog": "^1.14.1"
   },
-  "main": "software-license-manager.php",
+  "main": "src/main/php/software-license-manager.php",
   "dependencies": {}
 }
