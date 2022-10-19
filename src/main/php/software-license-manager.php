@@ -60,5 +60,5 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'slm_settings_lin
 // plugin auto updater helper
 if (file_exists('plugin-update-checker/plugin-update-checker.php')) {
     require 'plugin-update-checker/plugin-update-checker.php';
-    $myUpdateChecker = Puc_v4_Factory::buildUpdateChecker('https://github.com/michelve/software-license-manager', __FILE__, '/software-license-manager');
+    $myUpdateChecker = Puc_v4_Factory::buildUpdateChecker('@plugin.github_repo@/releases/latest/download/info.json', __FILE__, '/@plugin.slug@');
 }

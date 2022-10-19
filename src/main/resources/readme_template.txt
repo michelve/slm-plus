@@ -1,20 +1,22 @@
-=== @PLUGIN_NAME@ ===
-Version: @VERSION@
+=== @plugin.name@ ===
+Version: @plugin.build_version@-@build.version@
 Contributors: Michel Velis
 Donate link: http://paypal.me/mvelis
 Tags: license, software license
-Requires at least: @WP_MIN_VERSION@
-Tested up to: @WP_VERSION_TESTED@
-Requires PHP: @PHP_MIN@
+Requires at least: @plugin.wp_version_min@
+Tested up to: @plugin.wp_version_tested@
+Requires PHP: @plugin.php_min@
 License: MIT
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Stable tag: @BUILD@
+Stable tag: @plugin.stable_version@
 
-Software license management solution for your web applications. Supports WooCommerce.
+@plugin.short@
 
 == Description ==
+Build Date: @build.date@
+Build Number: @build.version@
 
-Software license management solution for your web applications (WordPress plugins, Themes, Applications, PHP based membership script etc.). Supports WooCommerce.
+@plugin.long@
 
 ## 📦 Features:
 - Create license keys

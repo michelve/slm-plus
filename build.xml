@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="Software Licence Manager" basedir=".">
-
     <!-- Include config file containing  -->
     <loadproperties srcFile="build.properties" />
     <!-- Sets variables which can later be used. -->
@@ -10,10 +9,62 @@
     <property name="dist.dir" location="target/dist" />
     <property name="php.src" location="${src.dir}/main/php"/>
     <property name="test.php.src" location="${src.dir}/test/php"/>
-
     <property name="resources.src" location="${src.dir}/main/resources"/>
-
+    <property name="build.number" value="local"/>
+    <condition property="version.current" value="HEAD">
+        <not>
+            <isset property="prepare"/>
+        </not>
+    </condition>
+    <condition property="plugin.build_version" value="${plugin.version}-beta">
+        <not>
+            <isset property="prepare"/>
+        </not>
+    </condition>
+    <condition property="plugin.build_version" value="${plugin.version}">
+            <isset property="prepare"/>
+    </condition>
+    <condition property="plugin.stable_version" value="${version.prior}">
+        <not>
+            <isset property="prepare"/>
+        </not>
+    </condition>
+    <condition property="plugin.stable_version" value="${plugin.version}">
+        <isset property="prepare"/>
+    </condition>
+    <tstamp>
+        <format property="TODAY" pattern="yyyy-MM-dd hh:mm"/>
+    </tstamp>
     <fail unless="plugin.name"/>
+    <filterset id="slm_replacement">
+        <filter token="build.date" value="${TODAY}"/>
+        <filter token="changelog" value="${git.changelog}"/>
+        <propertyset>
+            <propertyref prefix="plugin"/>
+            <propertyref name="build.version"/>
+        </propertyset>
+    </filterset>
+    <macrodef name="git">
+        <attribute name="command" />
+        <attribute name="dir" default="" />
+        <element name="args" optional="true" />
+        <sequential>
+            <echo message="git @{command}" />
+            <exec executable="git" dir="@{dir}">
+                <arg value="@{command}" />
+                <args/>
+            </exec>
+        </sequential>
+    </macrodef>
+    <target name="release.init" >
+        <property name="release" value="true"/>
+        <fail unless="version.next"/>
+        <echo message="Current Release version is: ${version.current}"/>
+    </target>
+    <target name="publish.init" >
+        <echo message="Current Release version is: ${version.current}"/>
+        <property name="publish" value="TRUE"/>
+    </target>
     <target name="build.clean">
         <echo message="delete the build and dist directories ..." level="info"/>
         <delete dir="${build.dir}" />
@@ -23,130 +74,129 @@
     <target name="makedir" depends="build.clean">
         <echo message="making build and dist directories ..." level="info"/>
         <mkdir dir="${build.dir}" />
-        <mkdir dir="${build.dir}/${plugin.dir_name}" />
+        <mkdir dir="${build.dir}/${plugin.slug}" />
         <mkdir dir="${dist.dir}" />
     </target>
 
     <target name="make" depends="makedir" description="makes the magic">
-        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="false">
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="false" verbose="true">
             <fileset dir="${php.src}"
                      includes="**/*.php,**/*.png,**/*.svg,**/*.css,**/*.js,**/*.mo,**/*.pot"
+                     excludes="software-license-manager.php"
             />
         </copy>
     </target>
-
     <target name="text_replacement" depends="make">
         <echo message="Generating readme file ..." level="info" description="makes readme txt"/>
-        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="true">
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="true">
             <fileset dir="${resources.src}"/>
             <globmapper from="readme_template.txt" to="readme.txt"/>
-            <filterset>
-                <filter token="VERSION" value="${plugin.version}"/>
-                <filter token="PLUGIN_NAME" value="${plugin.name}"/>
-                <filter token="WP_MIN_VERSION" value="${plugin.wp_version_min}"/>
-                <filter token="WP_VERSION_TESTED" value="${plugin.wp_version_tested}"/>
-                <filter token="PHP_MIN" value="${plugin.php_min}"/>
-            </filterset>
+            <filterset refid="slm_replacement"/>
+        </copy>
+        <copy todir="${dist.dir}" failonerror="true">
+            <fileset dir="${resources.src}" includes="info.json"/>
+            <filterset refid="slm_replacement"/>
+        </copy>
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="true" verbose="true">
+            <fileset dir="${php.src}">
+                <include name="**/software-license-manager.php"/>
+            </fileset>
+            <globmapper from="software-license-manager.php" to="${plugin.slug}.php"/>
+            <filterset refid="slm_replacement"/>
         </copy>
     </target>
-    <target name="php_delete" depends="make">
-        <echo message="Deleting main php file ..." level="info" description="Deleting php"/>
-        <delete file="${build.dir}/${plugin.dir_name}/${plugin.dir_name}.php" failonerror="true"/>
-    </target>
-    <target name="php_text_replace" depends="php_delete">
-        <echo message="Generating main php file ..." level="info" description="makes php"/>
-        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="true" verbose="true">
-            <fileset dir="${php.src}" />
-            <globmapper from="software-license-manager.php" to="software-license-manager.php"/>
-            <filterset>
-                <filter token="VERSION" value="${plugin.version}"/>
-                <filter token="PLUGIN_NAME" value="${plugin.name}"/>
-                <filter token="WP_MIN_VERSION" value="${plugin.wp_version_min}"/>
-                <filter token="WP_VERSION_TESTED" value="${plugin.wp_version_tested}"/>
-                <filter token="PHP_MIN" value="${plugin.php_min}"/>
-            </filterset>
-        </copy>
-    </target>
-
-    <target name="dev.json">
-        <echo file="dev-${plugin.dir_name}.json" append="false">
-            {
-            "name" : "${plugin.name}",
-            "slug" : "${plugin.name}",
-            "homepage" : "https://your.domain.com/${plugin.name}/",
-            "download_url" : "https://your.domain.com/plugins/${plugin.name}/${plugin.name}.zip",
-            "version" : "${plugin.build}",
-            "requires" : "3.3",
-            "tested" : "3.5.1",
-            "last_updated" : "2013-02-24 16:00:00",
-            "upgrade_notice" : "${plugin.changelog.version}",
-            "author" : "your name",
-            "author_homepage" : "http://your.domain.com/",
-            "sections" : {
-            "description" : "${plugin.short}",
-            "installation_notes" : "Click install to download and automatically update to the new version..",
-            "changelog" : "This section list's what's changed. \n 1.7 - New Shortcode functions \n -Added pagination"
-            },
-            "downloaded" : 100
-            }
-        </echo>
-    </target>
-
-    <target name="zip" depends="makedir, make, text_replacement, php_text_replace">
+    <target name="zip" depends="text_replacement">
         <echo message="making the zip ..." level="info"/>
-        <zip destfile="${dist.dir}/${plugin.dir_name}.zip"
+        <zip destfile="${dist.dir}/${plugin.slug}.zip"
              basedir="/${build.dir}"
+             excludes="info.json"
         />
     </target>
-
-    <target name="default" depends="zip">
-        <echo message="Build Version ${plugin.version} Complete find the zip in ${dist.dir}/${plugin.dir_name}.zip" level="info"/>
-    </target>
-
-
-    <!-- *************************************************************** -->
-    <!--             ******** WP-CLI **********                       -->
-    <!-- *************************************************************** -->
-<!--
-    <target name="wp.status" description="WP-CLI check plugin state">
-        <echo message="Checking ${plugin.name} Status..." />
-
-        <exec executable="wp" dir=".">
-            <arg line="plugin status ${plugin.name}" />
+    <target name="changelog.generate" depends="makedir" unless="publish">
+        <property name="git_arg" value='log --pretty=format:"* %s (%an)" ${version.prior}..${version.current}'/>
+        <exec executable="git" failonerror="true" outputproperty="git.changelog" logerror="true" resolveexecutable="true">
+            <arg line='${git_arg}'/>
         </exec>
+        <echo message="${git.changelog}"/>
+        <delete file="${build.dir}\${plugin.slug}\CHANGELOG"/>
+        <concat destfile="${build.dir}\${plugin.slug}\CHANGELOG"  fixlastline="true">
+            <header trimleading="yes">${TODAY} - v${version.prior} .. v${version.current}
+                ${git.changelog}
+            </header>
+            <fileset dir="." includes="CHANGELOG" />
+        </concat>
     </target>
-
-    <target name="wp.install" description="WP-CLI install plugin">
-        <echo message="Installing ${plugin.name}..." />
-
-        <exec executable="wp" dir=".">
-            <arg line="plugin install ${dist.dir}/${plugin.name}.zip" />
-        </exec>
+    <target name="changelog.copy" depends="makedir">
+        <copy todir="${build.dir}/${plugin.slug}">
+            <fileset dir=".">
+                <include name="CHANGELOG"/>
+            </fileset>
+        </copy>
     </target>
-
-    <target name="wp.activate" depends="wp.install" description="WP-CLI activate plugin">
-        <echo message="Activating ${plugin.name}..." />
-
-        <exec executable="wp" dir=".">
-            <arg line="plugin activate ${plugin.name}" />
-        </exec>
+    <target name="release.tag" if="release">
+        <echo message="Creating Branch and Tagging for release"/>
+        <git command="branch">
+            <args>
+                <arg value="release/${plugin.version}"/>
+            </args>
+        </git>
+        <git command="checkout">
+            <args>
+                <arg value="release/${plugin.version}"/>
+            </args>
+        </git>
+        <git command="tag">
+            <args>
+                <arg value="${plugin.version}"/>
+            </args>
+        </git>
     </target>
-
-    <target name="wp.deactivate" description="WP-CLI deactivate plugin">
-        <echo message="Deactivating ${plugin.name}..." />
-
-        <exec executable="wp" dir=".">
-            <arg line="plugin deactivate ${plugin.name}.zip" />
-        </exec>
+    <target name="release.update" if="release" depends="release.tag,changelog.generate">
+        <delete file="CHANGELOG"/>
+        <move file="${build.dir}\${plugin.slug}\CHANGELOG" tofile="CHANGELOG"/>
     </target>
-
-    <target name="wp.delete" description="WP-CLI deactivate plugin">
-        <echo message="Deleting ${plugin.name}..." />
-
-        <exec executable="wp" dir=".">
-            <arg line="plugin delete ${plugin.name}.zip" />
-        </exec>
+    <target name="build.properties.update" if="release" depends="release.update">
+        <propertyfile file="build.properties">
+            <entry key="version.prior" value="${version.current}" operation="="/>
+            <entry key="plugin.version" value="${version.next}" operation="="/>
+        </propertyfile>
     </target>
-    -->
+    <target name="release.commit" if="release">
+        <property name="release-commit-message" value="Release Version ${plugin.version}"/>
+        <git command="commit">
+            <args>
+                <arg value="-am ${release-commit-message}" />
+            </args>
+        </git>
+        <git command="tag">
+            <args>
+                <arg value="-d"/>
+                <arg value="${plugin.version}"/>
+            </args>
+        </git>
+        <git command="tag">
+            <args>
+                <arg value="${plugin.version}"/>
+            </args>
+        </git>
+        <git command="checkout">
+            <args>
+                <arg value="master"/>
+            </args>
+        </git>
+    </target>
+    <target name="release.finalize" if="release">
+        <property name="master-commit-message" value="Prepare Development branch for ${version.next}"/>
+
+        <git command="commit">
+            <args>
+                <arg value="-am ${master-commit-message}"/>
+            </args>
+        </git>
+    </target>
+    <target name="publish" depends="publish.init, build.clean, makedir, make, changelog.copy, zip"/>
+    <target name="default" depends="makedir, changelog.generate, zip">
+        <echo message="Build Version ${plugin.version} Complete find the zip in ${dist.dir}/${plugin.slug}.zip" level="info"/>
+    </target>
 </project>
 

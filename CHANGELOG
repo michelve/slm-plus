@@ -1,0 +1,5 @@
+2022-10-19 05:26 - v5.6.1 .. v5.6.2}
+* WIP: Added a new action hook for when it receives an activation request for an expired license key (slm_api_listener_slm_activate_key_expired). (Michel Velis)
+* Update README.md (Michel)
+* updated read me (Michel Velis)
+* 5.6.1 release (Michel Velis)
