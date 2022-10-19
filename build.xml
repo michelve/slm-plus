@@ -10,9 +10,11 @@
     <property name="dist.dir" location="target/dist" />
     <property name="php.src" location="${src.dir}/main/php"/>
     <property name="test.php.src" location="${src.dir}/test/php"/>
-
     <property name="resources.src" location="${src.dir}/main/resources"/>
-
+    <property name="version.current" value=""/>
+    <tstamp>
+        <format property="TODAY" pattern="yyyy-MM-dd hh:mm"/>
+    </tstamp>
     <fail unless="plugin.name"/>
     <target name="build.clean">
         <echo message="delete the build and dist directories ..." level="info"/>
@@ -23,87 +25,97 @@
     <target name="makedir" depends="build.clean">
         <echo message="making build and dist directories ..." level="info"/>
         <mkdir dir="${build.dir}" />
-        <mkdir dir="${build.dir}/${plugin.dir_name}" />
+        <mkdir dir="${build.dir}/${plugin.slug}" />
         <mkdir dir="${dist.dir}" />
     </target>
 
-    <target name="make" depends="makedir" description="makes the magic">
-        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="false">
+    <target name="make" depends="makedir,changelog.generate" description="makes the magic">
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="false" verbose="true">
             <fileset dir="${php.src}"
                      includes="**/*.php,**/*.png,**/*.svg,**/*.css,**/*.js,**/*.mo,**/*.pot"
+                     excludes="software-license-manager.php"
             />
         </copy>
     </target>
 
+    <filterset id="slm_replacement">
+        <filter token="build.date" value="${TODAY}"/>
+        <filter token="changelog" value="${git.changelog}"/>
+        <propertyset>
+            <propertyref prefix="plugin"/>
+        </propertyset>
+    </filterset>
+
     <target name="text_replacement" depends="make">
         <echo message="Generating readme file ..." level="info" description="makes readme txt"/>
-        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="true">
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="true">
             <fileset dir="${resources.src}"/>
             <globmapper from="readme_template.txt" to="readme.txt"/>
-            <filterset>
-                <filter token="VERSION" value="${plugin.version}"/>
-                <filter token="PLUGIN_NAME" value="${plugin.name}"/>
-                <filter token="WP_MIN_VERSION" value="${plugin.wp_version_min}"/>
-                <filter token="WP_VERSION_TESTED" value="${plugin.wp_version_tested}"/>
-                <filter token="PHP_MIN" value="${plugin.php_min}"/>
-            </filterset>
+            <filterset refid="slm_replacement"/>
+        </copy>
+        <copy todir="${build.dir}" failonerror="true">
+            <fileset dir="${resources.src}" includes="info.json"/>
+            <filterset refid="slm_replacement"/>
+        </copy>
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="true" verbose="true">
+            <fileset dir="${php.src}">
+                <include name="**/software-license-manager.php"/>
+            </fileset>
+            <globmapper from="software-license-manager.php" to="${plugin.slug}.php"/>
+            <filterset refid="slm_replacement"/>
         </copy>
     </target>
     <target name="php_delete" depends="make">
         <echo message="Deleting main php file ..." level="info" description="Deleting php"/>
-        <delete file="${build.dir}/${plugin.dir_name}/${plugin.dir_name}.php" failonerror="true"/>
+        <delete file="${build.dir}/${plugin.slug}/${plugin.slug}.php" failonerror="true"/>
     </target>
     <target name="php_text_replace" depends="php_delete">
         <echo message="Generating main php file ..." level="info" description="makes php"/>
-        <copy todir="${build.dir}/${plugin.dir_name}" failonerror="true" verbose="true">
-            <fileset dir="${php.src}" />
-            <globmapper from="software-license-manager.php" to="software-license-manager.php"/>
-            <filterset>
-                <filter token="VERSION" value="${plugin.version}"/>
-                <filter token="PLUGIN_NAME" value="${plugin.name}"/>
-                <filter token="WP_MIN_VERSION" value="${plugin.wp_version_min}"/>
-                <filter token="WP_VERSION_TESTED" value="${plugin.wp_version_tested}"/>
-                <filter token="PHP_MIN" value="${plugin.php_min}"/>
-            </filterset>
-        </copy>
     </target>
-
-    <target name="dev.json">
-        <echo file="dev-${plugin.dir_name}.json" append="false">
-            {
-            "name" : "${plugin.name}",
-            "slug" : "${plugin.name}",
-            "homepage" : "https://your.domain.com/${plugin.name}/",
-            "download_url" : "https://your.domain.com/plugins/${plugin.name}/${plugin.name}.zip",
-            "version" : "${plugin.build}",
-            "requires" : "3.3",
-            "tested" : "3.5.1",
-            "last_updated" : "2013-02-24 16:00:00",
-            "upgrade_notice" : "${plugin.changelog.version}",
-            "author" : "your name",
-            "author_homepage" : "http://your.domain.com/",
-            "sections" : {
-            "description" : "${plugin.short}",
-            "installation_notes" : "Click install to download and automatically update to the new version..",
-            "changelog" : "This section list's what's changed. \n 1.7 - New Shortcode functions \n -Added pagination"
-            },
-            "downloaded" : 100
-            }
-        </echo>
-    </target>
-
     <target name="zip" depends="makedir, make, text_replacement, php_text_replace">
         <echo message="making the zip ..." level="info"/>
-        <zip destfile="${dist.dir}/${plugin.dir_name}.zip"
+        <zip destfile="${dist.dir}/${plugin.slug}.zip"
              basedir="/${build.dir}"
         />
     </target>
 
     <target name="default" depends="zip">
-        <echo message="Build Version ${plugin.version} Complete find the zip in ${dist.dir}/${plugin.dir_name}.zip" level="info"/>
+        <echo message="Build Version ${plugin.version} Complete find the zip in ${dist.dir}/${plugin.slug}.zip" level="info"/>
     </target>
-
-
+    <target name="release.init" >
+        <input message="Please enter previous release:" addproperty="version.prior" defaultvalue="${version.prior}"/>
+        <property name="version.current" value="${plugin.version}"/>
+        <echo message="Current version is: ${version.current}"/>
+        <input message="Please enter next version:" addproperty="version.next"/>
+    </target>
+    <target name="release.tag" depends="release.init">
+        <echo message="Creating Branch and Tagging for release"/>
+        <exec executable="git" failonerror="true" logerror="true">
+            <arg line="branch ${plugin.version}"/>
+        </exec>
+        <exec executable="git" failonerror="true" logerror="true">
+            <arg line="tag ${plugin.version}"/>
+        </exec>
+    </target>
+    <target name="changelog.generate">
+        <property name="git_arg" value='log --pretty=format:"* %s (%an)" ${version.prior}..${version.current}'/>
+        <exec executable="git" failonerror="true" outputproperty="git.changelog" logerror="true" resolveexecutable="true">
+            <arg line='${git_arg}'/>
+        </exec>
+        <echo message="${git.changelog}"/>
+        <delete file="${build.dir}\${plugin.slug}\CHANGELOG" failonerror="true"/>
+        <concat destfile="${build.dir}\${plugin.slug}\CHANGELOG"  fixlastline="true">
+            <header trimleading="yes">${TODAY} - v${version.prior} .. v${version.current}
+                ${git.changelog}
+            </header>
+            <fileset dir="." includes="CHANGELOG" />
+        </concat>
+    </target>
+    <target name="changelog.update" depends="release.tag,changelog.generate">
+        <delete file="CHANGELOG"/>
+        <move file="${build.dir}\${plugin.slug}\CHANGELOG" tofile="CHANGELOG"/>
+    </target>
+    <target name="release" depends="changelog.update,default"></target>
     <!-- *************************************************************** -->
     <!--             ******** WP-CLI **********                       -->
     <!-- *************************************************************** -->

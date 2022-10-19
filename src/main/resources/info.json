@@ -1,0 +1,18 @@
+{
+  "name" : "@plugin.name@",
+  "slug" : "@plugin.slug@",
+  "homepage" : "@plugin.github_repo@",
+  "download_url" : "@plugin.github_repo@/releases/latest/download/@plugin.slug@",
+  "version" : "@plugin.version@",
+  "requires" : "@plugin.wp_version_min@",
+  "tested" : "@plugin.wp_version_tested@",
+  "last_updated" : "@build.date@",
+  "upgrade_notice" : "@plugin.changelog.version@",
+  "author" : "Michel Velis",
+  "author_homepage" : "http://paypal.me/mvelis",
+  "sections" : {
+    "description" : "@plugin.short@",
+    "installation_notes" : "Click install to download and automatically update to the new version..",
+    "changelog" : "@changelog@"
+  }
+}
