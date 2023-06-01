@@ -1,5 +1,5 @@
 === @plugin.name@ ===
-Version: @plugin.build_version@-@build.version@
+Version: @plugin.build_version@-@build.number@
 Contributors: Michel Velis
 Donate link: http://paypal.me/mvelis
 Tags: license, software license
@@ -14,7 +14,7 @@ Stable tag: @plugin.stable_version@
 
 == Description ==
 Build Date: @build.date@
-Build Number: @build.version@
+Build Number: @build.number@
 
 @plugin.long@
 

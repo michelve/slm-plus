@@ -1,15 +1,15 @@
 <?php
 /*
-Plugin Name: @PLUGIN_NAME@
-Version: @VERSION@
-Plugin URI: https://github.com/michelve/software-license-manager/
+Plugin Name: @plugin.name@
+Version: @plugin.build_version@-@build.number@
+Plugin URI: @plugin.github_repo@
 Author: Michel Velis
 Author URI: http://www.epikly.com/
 Description: Software license management solution for your web applications (WordPress plugins, Themes, Applications, PHP based license software script etc.). Supports WooCommerce.
 Author2: <a href="https://www.tipsandtricks-hq.com/">Tips and Tricks HQ</a>
 Text Domain: softwarelicensemanager
 Domain Path: /i18n/languages/
-WC tested up to: @WP_VERSION_TESTED@
+WC tested up to: @plugin.wp_version_tested@
 */
 
 // If this file is called directly, abort.
@@ -19,7 +19,7 @@ if (!defined('WPINC')) {
 global $wpdb, $slm_debug_logger;
 
 //Short name/slug "SLM" or "slm"
-define('SLM_VERSION',               '@VERSION@');
+define('SLM_VERSION',               '@plugin.build_version@-@build.number@');
 define('SLM_DB_VERSION',            '4.3.5');
 define('SLM_REWRITE_VERSION',       '2.4.5');
 define('SLM_FOLDER',                dirname(plugin_basename(__FILE__)));

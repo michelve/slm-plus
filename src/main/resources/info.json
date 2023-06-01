@@ -7,12 +7,12 @@
   "requires" : "@plugin.wp_version_min@",
   "tested" : "@plugin.wp_version_tested@",
   "last_updated" : "@build.date@",
-  "upgrade_notice" : "@plugin.changelog.version@",
+  "upgrade_notice" : "@plugin.upgrade_notice@",
   "author" : "Michel Velis",
   "author_homepage" : "http://paypal.me/mvelis",
   "sections" : {
     "description" : "@plugin.short@",
     "installation_notes" : "Click install to download and automatically update to the new version..",
-    "changelog" : "@changelog@"
+    "changelog" : ["update.changelog"]
   }
 }
