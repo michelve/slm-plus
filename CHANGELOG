@@ -1,0 +1,30 @@
+2022-10-20 03:34 - v5.6.2 .. v5.6.3
+* Fix build for release process (Narimm)
+* Add build version to the readme (Narimm)
+* Update github workflow to enable tags (Narimm)
+* Update github workflow to enable tags (Narimm)
+* Update build file to remove unecessary tasks (Narimm)
+* Update build file to remove unecessary tasks (Narimm)
+* Fix Changelog generation (Narimm)
+* Add Github Action on commit to master (Narimm)
+* Update build system to use a info.json file rather than really on reading a readme.txt in the main repo.  This effectively controls releases to major versions. (Narimm)
+* Correct error on activate that trys to load a non-existent option. (Narimm)
+* Didnt include svg in the build copy (Narimm)
+* Refactor of the project to support ANT build system (Narimm)
+* Merge pull request #85 from michelve/dependabot/npm_and_yarn/minimist-1.2.6 (Michel)
+* Bump minimist from 1.2.5 to 1.2.6 (dependabot[bot])
+* Merge pull request #80 from michelve/dependabot/npm_and_yarn/node-fetch-2.6.7 (Michel)
+* Bump node-fetch from 2.6.1 to 2.6.7 (dependabot[bot])
+
+2022-10-19 05:26 - v5.6.1 .. v5.6.2}
+* WIP: Added a new action hook for when it receives an activation request for an expired license key (slm_api_listener_slm_activate_key_expired). (Michel Velis)
+* Update README.md (Michel)
+* updated read me (Michel Velis)
+* 5.6.1 release (Michel Velis)
+
+
+
+
+
+
+

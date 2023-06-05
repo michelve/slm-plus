@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Software Licence Manager" basedir=".">
+    <!-- Include config file containing  -->
+    <loadproperties srcFile="build.properties" />
+    <!-- Sets variables which can later be used. -->
+    <!-- The value of a property is accessed via ${} -->
+    <property name="src.dir" location="src" />
+    <property name="build.dir" location="target/generated" />
+    <property name="dist.dir" location="target/dist" />
+    <property name="php.src" location="${src.dir}/main/php"/>
+    <property name="test.php.src" location="${src.dir}/test/php"/>
+    <property name="resources.src" location="${src.dir}/main/resources"/>
+    <property name="build.number" value="local"/>
+    <condition property="version.current" value="HEAD">
+        <not>
+            <isset property="release"/>
+        </not>
+    </condition>
+    <condition property="version.current" value="${plugin.version}">
+        <isset property="release"/>
+    </condition>
+    <condition property="plugin.build_version" value="${plugin.version}-beta">
+        <not>
+            <isset property="release"/>
+        </not>
+    </condition>
+    <condition property="plugin.build_version" value="${plugin.version}">
+            <isset property="release"/>
+    </condition>
+    <condition property="plugin.stable_version" value="${version.prior}">
+        <not>
+            <isset property="release"/>
+        </not>
+    </condition>
+    <condition property="plugin.stable_version" value="${plugin.version}">
+        <isset property="release"/>
+    </condition>
+    <tstamp>
+        <format property="TODAY" pattern="yyyy-MM-dd hh:mm"/>
+    </tstamp>
+    <fail unless="plugin.name"/>
+    <filterset id="slm_replacement">
+        <filter token="build.date" value="${TODAY}"/>
+        <filter token="changelog" value="${git.changelog}"/>
+        <propertyset>
+            <propertyref prefix="plugin"/>
+            <propertyref name="build.number"/>
+        </propertyset>
+    </filterset>
+    <macrodef name="git">
+        <attribute name="command" />
+        <attribute name="dir" default="" />
+        <element name="args" optional="true" />
+        <sequential>
+            <echo message="git @{command}" />
+            <exec executable="git" dir="@{dir}">
+                <arg value="@{command}" />
+                <args/>
+            </exec>
+        </sequential>
+    </macrodef>
+    <target name="release.init" >
+        <property name="release" value="true"/>
+        <fail unless="version.next"/>
+        <echo message="Current Release version is: ${version.current}"/>
+    </target>
+    <target name="build.clean">
+        <echo message="delete the build and dist directories ..." level="info"/>
+        <delete dir="${build.dir}" />
+        <delete dir="${dist.dir}" />
+    </target>
+   <!-- Creates the  build & moves the files directory-->
+    <target name="makedir" depends="build.clean">
+        <echo message="making build and dist directories ..." level="info"/>
+        <mkdir dir="${build.dir}" />
+        <mkdir dir="${build.dir}/${plugin.slug}" />
+        <mkdir dir="${dist.dir}" />
+    </target>
+
+    <target name="make" depends="makedir" description="makes the magic">
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="false" verbose="true">
+            <fileset dir="${php.src}"
+                     includes="**/*.php,**/*.png,**/*.svg,**/*.css,**/*.js,**/*.mo,**/*.pot"
+                     excludes="software-license-manager.php"
+            />
+        </copy>
+    </target>
+    <target name="text_replacement" depends="make">
+        <echo message="Generating readme file ..." level="info" description="makes readme txt"/>
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="true">
+            <fileset dir="${resources.src}"/>
+            <globmapper from="readme_template.txt" to="readme.txt"/>
+            <filterset refid="slm_replacement"/>
+        </copy>
+        <copy todir="${dist.dir}" failonerror="true">
+            <fileset dir="${resources.src}" includes="info.json"/>
+            <filterset refid="slm_replacement"/>
+        </copy>
+        <replace file="${dist.dir}/info.json" value="update.changelog">
+            <replacefilter token="update.changelog" value="${update.changelog}"/>
+        </replace>
+        <copy todir="${build.dir}/${plugin.slug}" failonerror="true" verbose="true">
+            <fileset dir="${php.src}">
+                <include name="**/software-license-manager.php"/>
+            </fileset>
+            <globmapper from="software-license-manager.php" to="${plugin.slug}.php"/>
+            <filterset refid="slm_replacement"/>
+        </copy>
+    </target>
+    <target name="zip" depends="text_replacement">
+        <echo message="making the zip ..." level="info"/>
+        <zip destfile="${dist.dir}/${plugin.slug}.zip"
+             basedir="/${build.dir}"
+        />
+    </target>
+    <target name="changelog.generate" depends="makedir" unless="publish">
+        <property name="git_arg" value='log --pretty=format:"* %s (%an)" ${version.prior}..${version.current}'/>
+        <exec executable="git" failonerror="true" outputproperty="git.changelog" logerror="true" resolveexecutable="true">
+            <arg line='${git_arg}'/>
+        </exec>
+        <echo message="${git.changelog}"/>
+        <delete file="${build.dir}\${plugin.slug}\CHANGELOG"/>
+        <concat destfile="${build.dir}\${plugin.slug}\CHANGELOG"  fixlastline="true">
+            <header trimleading="yes">${TODAY} - v${version.prior} .. v${version.current}
+                ${git.changelog}
+            </header>
+            <fileset dir="." includes="CHANGELOG" />
+        </concat>
+        <loadresource property="update.changelog">
+            <propertyresource name="git.changelog"/>
+            <filterchain>
+                <tokenfilter>
+                    <filetokenizer/>
+                    <replacestring from="${line.separator}" to='&lt;br/&gt;'/>
+                </tokenfilter>
+            </filterchain>
+        </loadresource>
+    </target>
+    <target name="changelog.copy" depends="makedir" description="Copies the changelog to distribition build">
+        <loadfile property="git.changelog"
+                  srcFile="CHANGELOG"/>
+        <copy todir="${build.dir}/${plugin.slug}">
+            <fileset dir=".">
+                <include name="CHANGELOG"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="release.tag" if="release">
+        <echo message="Creating Branch and Tagging for release"/>
+        <git command="branch">
+            <args>
+                <arg value="release/${plugin.version}"/>
+            </args>
+        </git>
+        <git command="checkout">
+            <args>
+                <arg value="release/${plugin.version}"/>
+            </args>
+        </git>
+        <git command="tag">
+            <args>
+                <arg value="${plugin.version}"/>
+            </args>
+        </git>
+    </target>
+    <target name="release.update" if="release" depends="release.tag,changelog.generate">
+        <delete file="CHANGELOG"/>
+        <move file="${build.dir}\${plugin.slug}\CHANGELOG" tofile="CHANGELOG"/>
+    </target>
+    <target name="build.properties.update" if="release" depends="release.update">
+        <propertyfile file="build.properties">
+            <entry key="version.prior" value="${version.current}" operation="="/>
+            <entry key="plugin.version" value="${version.next}" operation="="/>
+        </propertyfile>
+    </target>
+    <target name="release.commit" if="release">
+        <property name="release-commit-message" value="Release Version ${plugin.version}"/>
+        <git command="commit">
+            <args>
+                <arg value="-am ${release-commit-message}" />
+            </args>
+        </git>
+        <git command="checkout">
+            <args>
+                <arg value="master"/>
+            </args>
+        </git>
+    </target>
+    <target name="release.finalize" if="release">
+        <property name="master-commit-message" value="Prepare Development branch for ${version.next}"/>
+
+        <git command="commit">
+            <args>
+                <arg value="-am ${master-commit-message}"/>
+            </args>
+        </git>
+    </target>
+    <target name="default" depends="makedir, changelog.generate, zip">
+        <echo message="Build Version ${plugin.version} Complete find the zip in ${dist.dir}/${plugin.slug}.zip" level="info"/>
+    </target>
+    <target name="release" depends="release.init,default, release.commit, release.tag, build.properties.update,release.finalize" />
+</project>
+
