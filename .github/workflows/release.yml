@@ -19,8 +19,10 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
+      - name: Checkout Tags
+        run: git fetch --tags origin
       - name: Build with Ant
-        run: ant -noinput -Dbuild.number=$GITHUB_RUN_NUMBER -Dprepare=true publish
+        run: ant -noinput -Dbuild.number=$GITHUB_RUN_NUMBER default
       - name: Release Artifacts
         uses: xresloader/upload-to-github-release@v1
         env:
