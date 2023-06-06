@@ -2,8 +2,6 @@ name: Release CI
 
 on:
   push:
-    branches:
-      - "release/**"
     tags:
       - '*'
 
@@ -22,7 +20,7 @@ jobs:
       - name: Checkout Tags
         run: git fetch --tags origin
       - name: Build with Ant
-        run: ant -noinput -Dbuild.number=$GITHUB_RUN_NUMBER -Drelease=true -DdryRun=true release
+        run: ant -noinput -Dbuild.number=$GITHUB_RUN_NUMBER -Dversion.next=fake -Drelease=true -DdryRun=true release
       - name: Release Artifacts
         uses: xresloader/upload-to-github-release@v1
         env:
@@ -30,3 +28,8 @@ jobs:
         with:
           file: "target/dist/*.*"
           draft: true
+          tags: true
+          tag_name: ${{ github.ref_name }}
+          default_release_name: Release ${{ github.ref_name }}
+
+
