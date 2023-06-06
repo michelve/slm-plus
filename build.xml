@@ -11,34 +11,19 @@
     <property name="test.php.src" location="${src.dir}/test/php"/>
     <property name="resources.src" location="${src.dir}/main/resources"/>
     <property name="build.number" value="local"/>
-    <condition property="version.current" value="HEAD">
-        <not>
-            <isset property="release"/>
-        </not>
-    </condition>
-    <condition property="version.current" value="${plugin.version}">
+    <condition property="version.current" value="${plugin.version}" else="HEAD">
         <isset property="release"/>
     </condition>
-    <condition property="plugin.build_version" value="${plugin.version}-beta">
-        <not>
-            <isset property="release"/>
-        </not>
+    <condition property="plugin.build_version" value="${plugin.version}" else="${plugin.version}-beta">
+        <isset property="release"/>
     </condition>
-    <condition property="plugin.build_version" value="${plugin.version}">
-            <isset property="release"/>
-    </condition>
-    <condition property="plugin.stable_version" value="${version.prior}">
-        <not>
-            <isset property="release"/>
-        </not>
-    </condition>
-    <condition property="plugin.stable_version" value="${plugin.version}">
+    <condition property="plugin.stable_version" value="${plugin.version}" else="${version.prior}">
         <isset property="release"/>
     </condition>
     <tstamp>
         <format property="TODAY" pattern="yyyy-MM-dd hh:mm"/>
     </tstamp>
-    <fail unless="plugin.name"/>
+    <fail unless="plugin.name" message="Plugin Name missing"/>
     <filterset id="slm_replacement">
         <filter token="build.date" value="${TODAY}"/>
         <propertyset>
@@ -92,11 +77,18 @@
         </copy>
     </target>
     <target name="info.generate" depends="make.dir" unless="publish">
-        <property name="git_arg" value='log --pretty=format:"* %s (%an)" ${version.prior}..${version.current}'/>
+        <condition property="git_arg" value='log --pretty=format:"* %s (%an)" ${version.prior}..${version.current}'
+                   else='log --pretty=format:"* %s (%an)" ${version.prior}..HEAD' >
+            <and>
+            <isset property="release"/>
+            <not>
+                <isset property="dryRun" />
+            </not>
+            </and>
+        </condition>
         <exec executable="git" failonerror="true" outputproperty="git.changelog" logerror="true" resolveexecutable="true">
             <arg line='${git_arg}'/>
         </exec>
-        <delete file="${build.dir}\${plugin.slug}\CHANGELOG"/>
         <concat destfile="${build.dir}\${plugin.slug}\CHANGELOG"  fixlastline="true">
             <header trimleading="yes">${TODAY} - v${version.prior} .. v${version.current}
                 ${git.changelog}
@@ -127,12 +119,20 @@
              basedir="/${build.dir}"
         />
     </target>
-    <target name="release.init" >
-        <property name="release" value="true"/>
+    <target name="release.init">
         <fail unless="version.next"/>
         <echo message="Current Release version is: ${version.current}"/>
     </target>
-    <target name="release.tag" if="release">
+    <target name="release.update" if="release" depends="release.commit-branch">
+        <delete file="CHANGELOG"/>
+        <copy file="${build.dir}\${plugin.slug}\CHANGELOG" tofile="CHANGELOG"/>
+        <propertyfile file="build.properties">
+            <entry key="version.prior" value="${version.current}" operation="="/>
+            <entry key="plugin.version" value="${version.next}" operation="="/>
+        </propertyfile>
+    </target>
+    <target name="release.branch" if="release" unless="dryRun">
+        <property name="release-commit-message" value="Release Version ${plugin.version}"/>
         <echo message="Creating Branch and Tagging for release"/>
         <git command="branch">
             <args>
@@ -150,19 +150,8 @@
             </args>
         </git>
     </target>
-    <target name="release.update" if="release" depends="release.tag,info.generate">
-        <delete file="CHANGELOG"/>
-        <move file="${build.dir}\${plugin.slug}\CHANGELOG" tofile="CHANGELOG"/>
-    </target>
-    <target name="build.properties.update" if="release" depends="release.update">
-        <propertyfile file="build.properties">
-            <entry key="version.prior" value="${version.current}" operation="="/>
-            <entry key="plugin.version" value="${version.next}" operation="="/>
-        </propertyfile>
-    </target>
-    <target name="release.commit" if="release">
-        <property name="release-commit-message" value="Release Version ${plugin.version}"/>
-        <git command="commit">
+    <target name="release.commit-branch" if="release" unless="dryRun">
+    <git command="commit">
             <args>
                 <arg value="-am ${release-commit-message}" />
             </args>
@@ -173,9 +162,8 @@
             </args>
         </git>
     </target>
-    <target name="release.finalize" if="release">
+    <target name="release.finalize" if="release" unless="dryRun">
         <property name="master-commit-message" value="Prepare Development branch for ${version.next}"/>
-
         <git command="commit">
             <args>
                 <arg value="-am ${master-commit-message}"/>
@@ -185,6 +173,6 @@
     <target name="default" depends="make.dir, make, info.generate, zip">
         <echo message="Build Version ${plugin.version} Complete find the zip in ${dist.dir}/${plugin.slug}.zip" level="info"/>
     </target>
-    <target name="release" depends="release.init,default, release.commit, release.tag, build.properties.update,release.finalize" />
+    <target name="release" depends="release.init, release.branch, default, release.commit-branch, release.update,release.finalize" />
 </project>
 
