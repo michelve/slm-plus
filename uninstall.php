@@ -50,7 +50,7 @@ foreach ($tables_to_drop as $table) {
     // Check if the table exists before attempting to drop it
     if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table)) !== null) {
         // Drop the table if it exists
-        $wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS %s", $table));
+        $wpdb->query("DROP TABLE IF EXISTS {$table}");
     }
 }
 
@@ -70,20 +70,16 @@ foreach ($post_types as $post_type) {
 
 // Clean orphaned postmeta entries using `DELETE` queries
 $wpdb->query(
-    $wpdb->prepare(
-        "DELETE pm FROM {$wpdb->postmeta} pm
-        LEFT JOIN {$wpdb->posts} p ON pm.post_id = p.ID
-        WHERE p.ID IS NULL"
-    )
+    "DELETE pm FROM {$wpdb->postmeta} pm
+    LEFT JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+    WHERE p.ID IS NULL"
 );
 
 // Clean orphaned term relationships if there are custom taxonomies involved
 $wpdb->query(
-    $wpdb->prepare(
-        "DELETE tr FROM {$wpdb->term_relationships} tr
-        LEFT JOIN {$wpdb->posts} p ON tr.object_id = p.ID
-        WHERE p.ID IS NULL"
-    )
+    "DELETE tr FROM {$wpdb->term_relationships} tr
+    LEFT JOIN {$wpdb->posts} p ON tr.object_id = p.ID
+    WHERE p.ID IS NULL"
 );
 
 // Delete custom user meta related to the plugin (if applicable)

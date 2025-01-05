@@ -192,45 +192,84 @@ function slm_add_licenses_menu()
 
                 case 'activity': ?>
 
-                    <?php
-                    // Retrieve the license key for the current record
-                    $license_key = esc_attr($data['license_key']);
 
-                    // Fetch the log data using a utility function to handle the database query
-                    $log_entries = SLM_Helper_Class::get_license_logs($license_key);
 
-                    // Display the log table if there are any log entries
-                    if ($log_entries) {
-                    ?>
-                        <div class="wrap">
-                            <h2><?php esc_html_e('Activity Log', 'slm-plus'); ?></h2>
-                            <table class="widefat striped">
-                                <thead>
-                                    <tr>
-                                        <th><?php esc_html_e('ID', 'slm-plus'); ?></th>
-                                        <th><?php esc_html_e('Action', 'slm-plus'); ?></th>
-                                        <th><?php esc_html_e('Time', 'slm-plus'); ?></th>
-                                        <th><?php esc_html_e('Source', 'slm-plus'); ?></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($log_entries as $entry): ?>
-                                        <tr>
-                                            <td><?php echo esc_html($entry['id']); ?></td>
-                                            <td><?php echo esc_html($entry['slm_action']); ?></td>
-                                            <td><?php echo esc_html($entry['time']); ?></td>
-                                            <td><?php echo esc_html($entry['source']); ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+<?php
+global $wpdb;
+$table_name = SLM_TBL_LIC_LOG;
+
+// Preserve existing query parameters
+$current_url_params = $_GET;
+unset($current_url_params['orderby'], $current_url_params['order']); // Remove old sorting params
+$current_url = http_build_query($current_url_params); // Build the remaining query string
+
+// Fetch sorting parameters with defaults
+$orderby = isset($_GET['orderby']) ? esc_sql($_GET['orderby']) : 'time';
+$order   = isset($_GET['order']) && in_array(strtoupper($_GET['order']), ['ASC', 'DESC']) ? esc_sql($_GET['order']) : 'DESC';
+
+// Validate $orderby to ensure it's a valid column
+$valid_columns = ['id', 'slm_action', 'time', 'time_only', 'source'];
+if (!in_array($orderby, $valid_columns)) {
+    $orderby = 'time'; // Fallback to default
+}
+
+// Fetch data with sorting
+$query = $wpdb->prepare(
+    "SELECT * FROM $table_name WHERE license_key = %s ORDER BY $orderby $order LIMIT 10 OFFSET %d",
+    esc_sql($data['license_key']),
+    (isset($_GET['paged']) ? intval($_GET['paged'] - 1) * 10 : 0) // Calculate offset for pagination
+);
+$log_entries = $wpdb->get_results($query, ARRAY_A);
+?>
+
+<div class="wrap">
+    <h2><?php esc_html_e('Activity Log', 'slm-plus'); ?></h2>
+    <?php if (!empty($log_entries)): ?>
+        <table class="widefat striped">
+            <thead>
+                <tr>
                     <?php
-                    } else {
-                        // Show a message if there are no log entries
-                        echo '<p>' . esc_html__('No activity log found for this license.', 'slm-plus') . '</p>';
-                    }
+                    // Define all columns to be displayed and sortable
+                    $columns = [
+                        'id'         => __('ID', 'slm-plus'),
+                        'slm_action' => __('Action', 'slm-plus'),
+                        'time'       => __('Date & Time', 'slm-plus'),
+                        'source'     => __('Source', 'slm-plus'),
+                    ];
+
+                    // Render table headers with sorting links
+                    foreach ($columns as $column_key => $column_name):
+                        $next_order = ($orderby === $column_key && $order === 'ASC') ? 'DESC' : 'ASC';
                     ?>
+                        <th>
+                            <a href="?<?php echo $current_url; ?>&orderby=<?php echo esc_attr($column_key); ?>&order=<?php echo esc_attr($next_order); ?>">
+                                <?php echo esc_html($column_name); ?>
+                                <?php if ($orderby === $column_key): ?>
+                                    <?php echo $order === 'ASC' ? '&#9650;' : '&#9660;'; ?> <!-- Arrow for sorting -->
+                                <?php endif; ?>
+                            </a>
+                        </th>
+                    <?php endforeach; ?>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($log_entries as $entry): ?>
+                    <tr>
+                        <td><?php echo esc_html($entry['id']); ?></td>
+                        <td><?php echo esc_html($entry['slm_action']); ?></td>
+                        <td><?php echo esc_html($entry['time']); ?></td>
+                        <td><?php echo esc_html($entry['source']); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <p><?php esc_html_e('No activity log found for this license.', 'slm-plus'); ?></p>
+    <?php endif; ?>
+</div>
+
+
+
 
                 <?php
                     break;

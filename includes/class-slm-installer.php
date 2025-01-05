@@ -37,6 +37,48 @@ if (version_compare($used_db_version, $new_db_version, '<')) {
     // Check if the 'associated_orders' column exists
     $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $lic_key_table LIKE 'associated_orders'");
 
+    // Ensure the 'time' column is DATETIME
+    $check_time_column = $wpdb->get_results("SHOW COLUMNS FROM $lic_log_tbl LIKE 'time'");
+    if (!empty($check_time_column)) {
+        $time_column_info = $wpdb->get_row("SHOW COLUMNS FROM $lic_log_tbl WHERE Field = 'time'");
+        if ($time_column_info->Type !== 'datetime') {
+            error_log("SLM: Updating 'time' column to DATETIME in $lic_log_tbl.");
+            $update_time_column_query = "
+                ALTER TABLE $lic_log_tbl
+                MODIFY COLUMN time DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00';
+            ";
+            $update_time_column_result = $wpdb->query($update_time_column_query);
+            if ($update_time_column_result === false) {
+                error_log("SLM: Error updating 'time' column - " . $wpdb->last_error);
+            } else {
+                error_log("SLM: 'time' column updated successfully to DATETIME.");
+            }
+        } else {
+            error_log("SLM: 'time' column is already DATETIME.");
+        }
+    } else {
+        error_log("SLM: 'time' column does not exist in $lic_log_tbl. Skipping update.");
+    }
+
+    // Add the 'time_only' column if it doesn't exist
+    $check_time_only_column = $wpdb->get_results("SHOW COLUMNS FROM $lic_log_tbl LIKE 'time_only'");
+    if (empty($check_time_only_column)) {
+        error_log("SLM: Adding missing column 'time_only' to $lic_log_tbl.");
+        $add_time_only_column_query = "
+            ALTER TABLE $lic_log_tbl
+            ADD COLUMN time_only TIME NOT NULL DEFAULT '00:00:00';
+        ";
+        $add_time_only_column_result = $wpdb->query($add_time_only_column_query);
+        if ($add_time_only_column_result === false) {
+            error_log("SLM: Error adding 'time_only' column - " . $wpdb->last_error);
+        } else {
+            error_log("SLM: 'time_only' column added successfully.");
+        }
+    } else {
+        error_log("SLM: Column 'time_only' already exists in $lic_log_tbl.");
+    }
+
+
     if (empty($column_exists)) {
         error_log("SLM: Adding missing column 'associated_orders' to $lic_key_table.");
 
@@ -200,15 +242,17 @@ $slm_emails_tbl = "CREATE TABLE IF NOT EXISTS " . $lic_emails_table . " (
 dbDelta($slm_emails_tbl);
 
 // Create log table if not exists
-$log_tbl_sql = "CREATE TABLE IF NOT EXISTS " . $lic_log_tbl . " (
-      id INT NOT NULL AUTO_INCREMENT,
-      license_key varchar(255) NOT NULL,
-      slm_action varchar(255) NOT NULL,
-      time date NOT NULL DEFAULT '0000-00-00',
-      source varchar(255) NOT NULL,
-      PRIMARY KEY (id)
-)" . $charset_collate . ";";
+$log_tbl_sql = "CREATE TABLE IF NOT EXISTS" . $lic_log_tbl . " (
+    id INT NOT NULL AUTO_INCREMENT,
+    license_key VARCHAR(255) NOT NULL,
+    slm_action VARCHAR(255) NOT NULL,
+    time DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', -- Store combined date and time
+    time_only TIME NOT NULL DEFAULT '00:00:00',          -- Store time only
+    source VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id)
+) $charset_collate;";
 dbDelta($log_tbl_sql);
+
 
 // Create devices table if not exists
 $ldv_tbl_sql = "CREATE TABLE IF NOT EXISTS " . $lic_devices_table . " (

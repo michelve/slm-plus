@@ -1182,36 +1182,47 @@ class SLM_Utility
     {
         global $wpdb;
         $slm_log_table = SLM_TBL_LIC_LOG;
-
+    
         // Sanitize inputs
         $license_key = sanitize_text_field($license_key);
         $action = sanitize_text_field($action);
-
+    
         // Determine the request origin
+        $origin = '';
         if (!empty($_SERVER['HTTP_ORIGIN'])) {
             $origin = sanitize_text_field($_SERVER['HTTP_ORIGIN']);
         } elseif (!empty($_SERVER['HTTP_REFERER'])) {
             $origin = sanitize_text_field($_SERVER['HTTP_REFERER']);
-        } else {
+        } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
             $origin = sanitize_text_field($_SERVER['REMOTE_ADDR']);
         }
-
+    
+        // Get current date and time
+        $current_date_time = current_time('mysql'); // Returns 'Y-m-d H:i:s' in WordPress timezone
+        $current_time_only = date('H:i:s', strtotime($current_date_time)); // Extract time portion
+    
         // Prepare log data
-        $log_data = array(
+        $log_data = [
             'license_key' => $license_key,
             'slm_action'  => $action,
-            'time'        => current_time('mysql'), // Standardized date-time format
+            'time'        => $current_date_time, // Combined date and time
+            'time_only'   => $current_time_only, // Time only
             'source'      => $origin,
-        );
-
+        ];
+    
         // Insert log data into the database
         $inserted = $wpdb->insert($slm_log_table, $log_data);
-
+    
         // Check for insertion errors
         if ($inserted === false) {
             error_log("Failed to insert log for license key: $license_key, action: $action. Error: " . $wpdb->last_error);
+        } else {
+            error_log("Log inserted successfully for license key: $license_key, action: $action.");
         }
     }
+    
+    
+    
 
 
     public static function create_email_log($lic_key, $sent_to, $status, $sent, $date_sent = null)
@@ -1420,3 +1431,4 @@ class SLM_Utility
         }
     }
 }
+

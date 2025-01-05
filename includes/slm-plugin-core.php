@@ -140,7 +140,7 @@ function slmplus_init_handler()
 function slmplus_plugins_loaded_handler()
 {
     if (is_admin() && get_option('slm_db_version') != SLM_DB_VERSION) {
-        require_once(SLM_LIB . 'class-slm-installer.php');
+        require_once SLM_LIB . 'class-slm-installer.php';
         // TODO - Implement DB update logic here
     }
 }
@@ -208,8 +208,8 @@ function wc_log($msg)
 
 // WooCommerce integration
 if (SLM_Helper_Class::slm_get_option('slm_woo') == 1 && is_plugin_active('woocommerce/woocommerce.php')) {
-    require_once(SLM_WOO . 'includes/wc_licenses_class.php');
-    require_once(SLM_WOO . 'includes/slm-meta-boxes.php');
+    require_once SLM_WOO . 'includes/wc_licenses_class.php';
+    require_once SLM_WOO . 'includes/slm-meta-boxes.php';
     require_once SLM_WOO . 'includes/register-template.php';
     require_once SLM_WOO . 'includes/purchase.php';
     require_once SLM_WOO . 'includes/create-license-orders.php';
