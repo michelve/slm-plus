@@ -201,9 +201,9 @@ function slm_subscribers_menu()
                         <div class="manage-user">
                             <table class="wp-list-table widefat fixed striped items">
                                 <tr>
-                                    <th scope="col" style="width: 32px"><?php esc_html__('ID', 'slm-plus'); ?></th>
-                                    <th scope="col"><?php esc_html__('License key', 'slm-plus'); ?></th>
-                                    <th scope="col"><?php esc_html__('Status', 'slm-plus'); ?></th>
+                                    <th scope="col" style="width: 32px"><?php esc_html_e('ID', 'slm-plus'); ?></th>
+                                    <th scope="col"><?php esc_html_e('License key', 'slm-plus'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Status', 'slm-plus'); ?></th>
                                     <th scope="col"> </th>
                                 </tr>
                                 <?php
